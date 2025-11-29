@@ -24,7 +24,7 @@
     .question-main { font-size:1em; margin-bottom:18px; font-weight:400;}
     .answers { margin-bottom:20px;}
     .answer-label { display:block; margin-bottom:13px; font-size:1em; font-weight:400;}
-    .answer-label input[type="radio"] { margin-right:10px; }
+    .answer-label input[type="radio"], .answer-label input[type="checkbox"] { margin-right:10px; }
     .hint-row { margin-bottom:13px;}
     .hint-btn {
       font-size:0.95em; color:#1976d2; background:#e3f2fd; border:none; border-radius:7px; padding:6px 14px; margin-right:0; cursor:pointer;
@@ -68,6 +68,8 @@
     .end-btn {
       background:#d32f2f; color:#fff; padding:8px 24px; border:none; border-radius:5px; font-size:1em; font-weight:600; cursor:pointer;
     }
+    .highlight-correct { background: #c8e6c9; font-weight: bold;}
+    .highlight-incorrect { background: #fffde7; font-weight: bold;}
     @media (max-width: 950px) {
       .container {max-width:99vw; padding:2vw;}
       .question-big { font-size:1em;}
@@ -126,24 +128,56 @@
       let className = "level-" + txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase();
       return `<span class="level-tag ${className}">${txt}</span>`;
     }
+    function getMultiCount(text, options) {
+      let lower = text.toLowerCase();
+      let m = lower.match(/choose\s+(two|three|four|five|\d+|all)/) ||
+              lower.match(/select\s+(two|three|four|five|\d+|all)/) ||
+              lower.match(/(pick|mark)\s+(two|three|four|five|\d+|all)/);
+      if (m) {
+        let val = m[1] || m[2];
+        if (val === "two") return 2;
+        if (val === "three") return 3;
+        if (val === "four") return 4;
+        if (val === "five") return 5;
+        if (val === "all") return options ? options.length : 2;
+        if (!isNaN(val)) return Number(val);
+      }
+      return 1;
+    }
     function renderQuestion() {
       const q = questions[current];
+      let multiCount = getMultiCount(q.question, q.options);
       document.getElementById("question-number").textContent = `Question#${current+1}`;
       document.getElementById("question-level").innerHTML = levelTag(q.difficulty);
       document.getElementById("question-summary").innerHTML = `<b>Summary:</b> ${q.short||""}`;
       document.getElementById("question-main").innerHTML = q.question.replace(/\n/g,'<br>');
       let ansHtml = "";
-      q.options.forEach((option, i) => {
-        ansHtml += `<label class="answer-label" id="label${i}">
-            <input type="radio" name="q${current}" value="${i}" ${userAnswers[current] == i ? 'checked' : ''} ${checked[current] ? 'disabled' : ''} onchange="userAnswers[${current}]=${i};">
+      if (multiCount > 1) {
+        let arr = Array.isArray(userAnswers[current]) ? userAnswers[current] : [];
+        q.options.forEach((option, i) => {
+          ansHtml += `<label class="answer-label" id="label${i}">
+            <input type="checkbox" name="q${current}" value="${i}" ${(arr.includes(i)) ? 'checked' : ''} ${checked[current] ? 'disabled' : ''} onchange="updateMultiAnswer(${i})">
             ${String.fromCharCode(65+i)}. ${option}
-        </label>`;
-      });
+          </label>`;
+        });
+      } else {
+        q.options.forEach((option, i) => {
+          ansHtml += `<label class="answer-label" id="label${i}">
+            <input type="radio" name="q${current}" value="${i}" ${userAnswers[current] == i ? 'checked' : ''} ${checked[current] ? 'disabled' : ''} onchange="updateSingleAnswer(${i})">
+            ${String.fromCharCode(65+i)}. ${option}
+          </label>`;
+        });
+      }
       document.getElementById("answers").innerHTML = ansHtml;
       document.getElementById("status").textContent = "";
       document.getElementById("toggle-explanation").innerHTML = "+ Show answer & explanation";
       document.getElementById("explanation").style.display = showExplanation[current] ? "block" : "none";
-      let expHtml = `<span class="correct-hint">Đáp án đúng</span>: <span class="correct-answer">${String.fromCharCode(65+q.correct)}. ${q.options[q.correct]}</span><br>`;
+      let expHtml = "";
+      if (multiCount > 1 && Array.isArray(q.correct)) {
+        expHtml = `<span class="correct-hint">Đáp án đúng</span>: <span class="correct-answer">${q.correct.map(idx=>String.fromCharCode(65+idx)+'. '+q.options[idx]).join(', ')}</span><br>`;
+      } else {
+        expHtml = `<span class="correct-hint">Đáp án đúng</span>: <span class="correct-answer">${String.fromCharCode(65+q.correct)}. ${q.options[q.correct]}</span><br>`;
+      }
       if(q.reference) expHtml += `<span class="reference">Tham khảo: ${q.reference.replace(/\n/g,"<br>")}</span><br>`;
       if(q.explanation_en) expHtml += `<div class="explanation-en">Giải thích EN: ${q.explanation_en.replace(/\n/g,"<br>")}</div>`;
       if(q.explanation_vi) expHtml += `<div class="explanation-vi">Giải thích Vi: ${q.explanation_vi.replace(/\n/g,"<br>")}</div>`;
@@ -155,39 +189,98 @@
       document.getElementById("btn-last").disabled = current===questions.length-1;
       if(checked[current]) showCheckResult();
     }
+    // Nhận đáp án radio (1 lựa chọn)
+    window.updateSingleAnswer = function(i) {
+      userAnswers[current] = i;
+      localStorage.setItem('pmp_userAnswers', JSON.stringify(userAnswers));
+    };
+    // Nhận đáp án checkbox (nhiều lựa chọn)
+    window.updateMultiAnswer = function(i) {
+      let arr = Array.isArray(userAnswers[current]) ? userAnswers[current] : [];
+      let checkbox = document.querySelector('input[type=checkbox][name="q'+current+'"][value="'+i+'"]');
+      if (checkbox.checked) {
+        if (!arr.includes(i)) arr.push(i);
+      } else {
+        arr = arr.filter(x=>x!==i);
+      }
+      userAnswers[current] = arr;
+      localStorage.setItem('pmp_userAnswers', JSON.stringify(userAnswers));
+      // Cấm tick thêm nếu đủ số lượng
+      const q = questions[current];
+      let multiCount = getMultiCount(q.question, q.options);
+      let boxes = document.querySelectorAll('input[type=checkbox][name="q'+current+'"]');
+      boxes.forEach(box=>{
+        if(!arr.includes(Number(box.value)) && arr.length>=multiCount){
+          box.disabled = true;
+        } else {
+          box.disabled = false;
+        }
+      });
+    };
+
     function showCheckResult() {
       const q = questions[current];
-      const chosen = userAnswers[current];
+      const multiCount = getMultiCount(q.question, q.options);
       const status = document.getElementById('status');
       for (let i = 0; i < q.options.length; i++) {
         document.getElementById('label'+i).classList.remove("highlight-correct","highlight-incorrect");
       }
-      if (chosen === q.correct) {
+      let correct = (multiCount > 1 && Array.isArray(q.correct)) ? q.correct : [q.correct];
+      let chosen = (multiCount > 1) ? (Array.isArray(userAnswers[current]) ? userAnswers[current] : []) : [userAnswers[current]];
+      let isCorrect = false;
+      if (multiCount > 1) {
+        isCorrect = Array.isArray(q.correct) && chosen.length === q.correct.length &&
+          q.correct.every(idx=>chosen.includes(idx));
+      } else {
+        isCorrect = chosen[0] === correct[0];
+      }
+      if (isCorrect) {
         status.textContent = "CORRECT";
         status.className = "status correct";
-        document.getElementById('label'+q.correct).classList.add("highlight-correct");
+        correct.forEach(idx=>{
+          document.getElementById('label'+idx).classList.add("highlight-correct");
+        });
       } else {
         status.textContent = "INCORRECT";
         status.className = "status incorrect";
-        if (chosen !== null) document.getElementById('label'+chosen).classList.add("highlight-incorrect");
-        document.getElementById('label'+q.correct).classList.add("highlight-correct");
+        chosen.forEach(idx=>{
+          if(idx!=null)document.getElementById('label'+idx).classList.add("highlight-incorrect");
+        });
+        correct.forEach(idx=>{
+          document.getElementById('label'+idx).classList.add("highlight-correct");
+        });
       }
-      const radios = document.getElementsByName('q'+current);
-      for (let i = 0; i < radios.length; i++) radios[i].disabled = true;
+      let inputs = document.querySelectorAll('.answers input');
+      for (let i = 0; i < inputs.length; i++) inputs[i].disabled = true;
     }
-    document.getElementById("answer-btn").onclick = function() {
+    document.getElementById("answer-btn").onclick = function(e) {
+      const q = questions[current];
+      let multiCount = getMultiCount(q.question, q.options);
       if (checked[current]) return;
-      const radios = document.getElementsByName('q'+current);
-      let chosen = null;
-      for (let i = 0; i < radios.length; i++) {
-        if (radios[i].checked) { chosen = parseInt(radios[i].value); break; }
+      let status = document.getElementById('status');
+      if (multiCount > 1) {
+        let boxes = document.querySelectorAll('input[type=checkbox][name="q'+current+'"]');
+        let arr = [];
+        boxes.forEach(b=>{ if(b.checked) arr.push(Number(b.value)); });
+        if (arr.length < multiCount) {
+          status.textContent = `Please choose ${multiCount} answers!`;
+          status.className = "status";
+          return;
+        }
+        userAnswers[current] = arr;
+      } else {
+        let radios = document.getElementsByName('q'+current);
+        let chosen = null;
+        for (let i = 0; i < radios.length; i++) {
+          if (radios[i].checked) { chosen = parseInt(radios[i].value); break; }
+        }
+        if (chosen === null) {
+          status.textContent = "Please choose an answer!";
+          status.className = "status";
+          return;
+        }
+        userAnswers[current] = chosen;
       }
-      if (chosen === null) {
-        document.getElementById('status').textContent = "Please choose an answer!";
-        document.getElementById('status').className = "status";
-        return;
-      }
-      userAnswers[current] = chosen;
       checked[current] = true;
       showCheckResult();
       localStorage.setItem('pmp_userAnswers', JSON.stringify(userAnswers));
@@ -210,12 +303,12 @@
       } else {
         alert("Hãy tự copy prompt sau và dán vào ChatGPT:\n\n" + prompt); window.open("https://chat.openai.com/", "_blank");
       }
-    }; // <citation>1</citation><citation>2</citation><citation>3</citation>
+    };
     document.getElementById("btn-first").onclick = function() { if(current>0){current=0;renderQuestion();} };
     document.getElementById("btn-prev").onclick = function() { if(current>0){current--;renderQuestion();} };
     document.getElementById("btn-next").onclick = function() { if(current<questions.length-1){current++;renderQuestion();} };
     document.getElementById("btn-last").onclick = function() { if(current<questions.length-1){current=questions.length-1;renderQuestion();} };
-    document.getElementById("btn-list").onclick = function() { window.location.href="questionsList.html"; };
+    document.getElementById("btn-list").onclick = function() { window.location.href = "questionsList.html"; };
     document.getElementById("btn-end").onclick = function() {
       localStorage.setItem('pmp_userAnswers', JSON.stringify(userAnswers));
       localStorage.setItem('pmp_checked', JSON.stringify(checked));
