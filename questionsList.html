@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
   <meta charset="UTF-8">
   <title>PMP MOCK TEST - Question List</title>
   <style>
     body { background: #f4f4f4; font-size: 15px;}
     .container {
-      max-width: 820px; margin: 36px auto; background: #fff; border-radius: 18px;
+      max-width: 1100px; margin: 36px auto; background: #fff; border-radius: 18px;
       box-shadow: 0 6px 32px rgba(0,0,0,0.08); padding: 18px 18px 20px 18px;
     }
     .icon-main { text-align:center; margin-bottom:10px;}
@@ -111,6 +111,7 @@
     <div class="section-title">QUESTION LIST</div>
     <div id="test-area"></div>
   </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     let questions = [];
     let filterDomain = "all";
@@ -147,28 +148,24 @@
     }
     function statusCell(idx, q) {
       let userAnswers = JSON.parse(localStorage.getItem('pmp_userAnswers')||"[]");
-      let checked = JSON.parse(localStorage.getItem('pmp_checked')||"[]");
       let answer = userAnswers[idx];
-      let isChecked = checked[idx];
       let multiCount = 1;
-      // Multiple answer detection (reuse logic như result)
       let lower = q.question ? q.question.toLowerCase() : "";
       let mc = lower.match(/choose\s+(two|three|four|five|\d+|all)/) ||
                lower.match(/select\s+(two|three|four|five|\d+|all)/) ||
                lower.match(/(pick|mark)\s+(two|three|four|five|\d+|all)/);
       if (mc) {
-        if (mc[1] === "two") multiCount = 2;
-        else if (mc[1] === "three") multiCount = 3;
-        else if (mc[1] === "four") multiCount = 4;
-        else if (mc[1] === "five") multiCount = 5;
-        else if (mc[1] === "all") multiCount = q.options ? q.options.length : 2;
-        else if (!isNaN(mc[1])) multiCount = Number(mc[1]);
+        let val = mc[1] || mc[2];
+        if (val === "two") multiCount = 2;
+        else if (val === "three") multiCount = 3;
+        else if (val === "four") multiCount = 4;
+        else if (val === "five") multiCount = 5;
+        else if (val === "all") multiCount = q.options ? q.options.length : 2;
+        else if (!isNaN(val)) multiCount = Number(val);
       }
-      // Chưa chọn đáp án
       if (answer == null || (Array.isArray(answer) && answer.length === 0)) {
         return `<span class="status status-unanswered">Not answered</span>`;
       }
-      // Đúng/sai
       let correct = (multiCount > 1 && Array.isArray(q.correct)) ? q.correct : [q.correct];
       let chosen = (multiCount > 1) ? (Array.isArray(answer) ? answer : []) : [answer];
       let isCorrect = false;
@@ -184,7 +181,6 @@
         return `<span class="status status-incorrect">INCORRECT</span>`;
       }
     }
-
     function renderListPage() {
       let filteredQuestions = questions;
       if (filterDomain !== "all") {
@@ -299,8 +295,116 @@
       page = p;
       renderListPage();
     }
-    function printQuestionsOnly() { /* ... giữ nguyên như các bản trước ... */ }
-    function printFull() { /* ... giữ nguyên như các bản trước ... */ }
+
+    function printQuestionsOnly() {
+      let questions = JSON.parse(localStorage.getItem('pmp_questions')||"[]");
+      if (!questions.length) return;
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+      doc.setFont('times', '');
+      doc.setFontSize(15);
+      doc.setTextColor(33,33,33);
+      doc.text("PMP MOCK TEST - Questions Only", 20, 20);
+      doc.setFontSize(11);
+      let y = 30;
+      let marginL = 20, lineH = 6, pageH = 287;
+      questions.forEach((q, idx) => {
+        doc.setFontSize(13);
+        doc.setTextColor(33,80,180);
+        doc.text(`Question#${idx+1}:`, marginL, y);
+        doc.setFontSize(11);
+        doc.setTextColor(199,120,0);
+        doc.text(` [${q.difficulty||"Moderate"}]`, marginL+40, y);
+        y+=lineH;
+        doc.setTextColor(33,33,33);
+        // KHÔNG IN Summary
+        let lines = doc.splitTextToSize(q.question, 170);
+        for (let l=0; l<lines.length; l++) {
+          if (y > pageH-lineH) { doc.addPage(); doc.setFont('times',''); y = 20; }
+          doc.text(lines[l], marginL, y);
+          y += lineH;
+        }
+        q.options.forEach((opt, i) => {
+          let optStr = `${String.fromCharCode(65+i)}. ${opt}`;
+          let optLines = doc.splitTextToSize(optStr, 160);
+          for (let l=0; l<optLines.length; l++) {
+            if (y > pageH-lineH) { doc.addPage(); doc.setFont('times',''); y = 20; }
+            doc.text(optLines[l], marginL+4, y);
+            y += lineH;
+          }
+        });
+        y += 2;
+        if (y > pageH-lineH) { doc.addPage(); doc.setFont('times',''); y = 20; }
+      });
+      doc.save("PMP_Questions_Only.pdf");
+    }
+	
+	function printFull() {
+        if (!questions.length) return;
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const marginLR = 15; // mm
+        const marginTop = 10;
+        const marginBottom = 10;
+        const pdfWidth = pageWidth - marginLR * 2;
+        let y = marginTop;
+
+        let i = 0;
+
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(21);
+        pdf.text("PMP MOCK TEST - Full Content", pageWidth / 2, marginTop + 8, { align: "center" });
+        y = marginTop + 18;
+
+        function renderQuestionToCanvas(q, idx, cb) {
+            let pdfDiv = document.createElement("div");
+            pdfDiv.setAttribute('style', 'width:624px;background:#fff;color:#222;position:fixed;left:-9999px;top:0;z-index:-1;padding:0;');
+            pdfDiv.innerHTML = `<div class="pdf-main" style="font-size: 15px; color: #222 !important; background: #fff !important;">
+                <div class="pdf-question">
+                    <span class="pdf-qnum" style="color:#1976d2;font-weight:bold;">Question#${idx+1}:</span>
+                    <span class="pdf-difficulty" style="color:#fbc02d;font-weight:bold;"> [${q.difficulty}]</span>
+                    <div class="pdf-question-text">${q.question.replace(/\n/g,'<br>')}</div>
+                    <div class="pdf-options">
+                        ${q.options.map((opt,i)=>`<div class="pdf-option">${String.fromCharCode(65+i)}. ${opt}${i===q.correct ? '<span style="color:#388e3c;font-weight:bold;"> [Correct]</span>':''}</div>`).join('')}
+                    </div>
+                    ${q.reference ? `<div class="pdf-reference" style="color:#6a1b9a;background:#ede7f6;font-family:'Courier New',Courier,monospace;padding:4px 8px;border-radius:5px;display:inline-block;margin-top:7px;margin-bottom:7px;">Reference: ${q.reference.replace(/\n/g,'<br>')}</div>` : ''}
+                    ${q.explanation_en ? `<span class="pdf-explanation-en" style="font-style:italic;color:#1976d2;margin-top:7px;margin-bottom:7px;display:block;">Explain EN: ${q.explanation_en.replace(/\n/g,'<br>')}</span>` : ''}
+                    ${q.explanation_vi ? `<span class="pdf-explanation-vi" style="margin-bottom:7px;margin-top:7px;display:block;">Explain VI: ${q.explanation_vi.replace(/\n/g,'<br>')}</span>` : ''}
+                </div>
+            </div>`;
+            document.body.appendChild(pdfDiv);
+            html2canvas(pdfDiv, {scale:2, width:624, windowWidth:624, background:'#fff'}).then(canvas => {
+                document.body.removeChild(pdfDiv);
+                cb(canvas);
+            });
+        }
+
+        function nextQuestion() {
+            if (i < questions.length) {
+                renderQuestionToCanvas(questions[i], i, function(canvas) {
+                    const imgData = canvas.toDataURL('image/png');
+                    let imgPixelHeight = canvas.height;
+                    let imgPixelWidth = canvas.width;
+                    let imgPdfHeight = (imgPixelHeight * pdfWidth) / imgPixelWidth;
+                    if (y + imgPdfHeight > pageHeight - marginBottom) {
+                        pdf.addPage();
+                        y = marginTop;
+                    }
+                    pdf.addImage(imgData, 'PNG', marginLR, y, pdfWidth, imgPdfHeight);
+                    y += imgPdfHeight + 2;
+                    i++;
+                    nextQuestion();
+                });
+            } else {
+                pdf.save('PMP_Full.pdf');
+            }
+        }
+        nextQuestion();
+    }
+
+    
     window.onload = function() {
       let raw = localStorage.getItem('pmp_questions');
       if (!raw) {
@@ -312,5 +416,8 @@
       renderListPage();
     };
   </script>
+  <!-- jsPDF + html2canvas CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
