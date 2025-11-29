@@ -340,69 +340,72 @@
     }
 	
 	function printFull() {
-        if (!questions.length) return;
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const marginLR = 15; // mm
-        const marginTop = 10;
-        const marginBottom = 10;
-        const pdfWidth = pageWidth - marginLR * 2;
-        let y = marginTop;
+    if (!questions.length) return;
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const marginLR = 15;
+    const marginTop = 10;
+    const pdfWidth = pageWidth - marginLR * 2;
+    let y = marginTop;
 
-        let i = 0;
+    let i = 0;
 
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(21);
-        pdf.text("PMP MOCK TEST - Full Content", pageWidth / 2, marginTop + 8, { align: "center" });
-        y = marginTop + 18;
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(17); // Đầu trang to vừa phải
+    pdf.text("PMP MOCK TEST - Full Content", pageWidth / 2, marginTop + 8, { align: "center" });
+    y = marginTop + 18;
 
-        function renderQuestionToCanvas(q, idx, cb) {
-            let pdfDiv = document.createElement("div");
-            pdfDiv.setAttribute('style', 'width:624px;background:#fff;color:#222;position:fixed;left:-9999px;top:0;z-index:-1;padding:0;');
-            pdfDiv.innerHTML = `<div class="pdf-main" style="font-size: 15px; color: #222 !important; background: #fff !important;">
-                <div class="pdf-question">
-                    <span class="pdf-qnum" style="color:#1976d2;font-weight:bold;">Question#${idx+1}:</span>
-                    <span class="pdf-difficulty" style="color:#fbc02d;font-weight:bold;"> [${q.difficulty}]</span>
-                    <div class="pdf-question-text">${q.question.replace(/\n/g,'<br>')}</div>
-                    <div class="pdf-options">
-                        ${q.options.map((opt,i)=>`<div class="pdf-option">${String.fromCharCode(65+i)}. ${opt}${i===q.correct ? '<span style="color:#388e3c;font-weight:bold;"> [Correct]</span>':''}</div>`).join('')}
-                    </div>
-                    ${q.reference ? `<div class="pdf-reference" style="color:#6a1b9a;background:#ede7f6;font-family:'Courier New',Courier,monospace;padding:4px 8px;border-radius:5px;display:inline-block;margin-top:7px;margin-bottom:7px;">Reference: ${q.reference.replace(/\n/g,'<br>')}</div>` : ''}
-                    ${q.explanation_en ? `<span class="pdf-explanation-en" style="font-style:italic;color:#1976d2;margin-top:7px;margin-bottom:7px;display:block;">Explain EN: ${q.explanation_en.replace(/\n/g,'<br>')}</span>` : ''}
-                    ${q.explanation_vi ? `<span class="pdf-explanation-vi" style="margin-bottom:7px;margin-top:7px;display:block;">Explain VI: ${q.explanation_vi.replace(/\n/g,'<br>')}</span>` : ''}
+    function renderQuestionToCanvas(q, idx, cb) {
+        let pdfDiv = document.createElement("div");
+        // Font-size nhỏ hơn, giống print question only
+        pdfDiv.setAttribute('style', 'width:624px;background:#fff;color:#222;position:fixed;left:-9999px;top:0;z-index:-1;padding:0;');
+        pdfDiv.innerHTML = `<div class="pdf-main" style="font-size: 11px; color: #222 !important; background: #fff !important;">
+            <div class="pdf-question">
+                <span class="pdf-qnum" style="color:#1976d2;font-weight:bold;">Question#${idx+1}:</span>
+                <span class="pdf-difficulty" style="color:#fbc02d;font-weight:bold;"> [${q.difficulty}]</span>
+                <div class="pdf-question-text">${q.question.replace(/\n/g,'<br>')}</div>
+                <div class="pdf-options">
+                    ${q.options.map((opt,i)=>`<div class="pdf-option">${String.fromCharCode(65+i)}. ${opt}${i===q.correct ? '<span style="color:#388e3c;font-weight:bold;"> [Correct]</span>':''}</div>`).join('')}
                 </div>
-            </div>`;
-            document.body.appendChild(pdfDiv);
-            html2canvas(pdfDiv, {scale:2, width:624, windowWidth:624, background:'#fff'}).then(canvas => {
-                document.body.removeChild(pdfDiv);
-                cb(canvas);
-            });
-        }
-
-        function nextQuestion() {
-            if (i < questions.length) {
-                renderQuestionToCanvas(questions[i], i, function(canvas) {
-                    const imgData = canvas.toDataURL('image/png');
-                    let imgPixelHeight = canvas.height;
-                    let imgPixelWidth = canvas.width;
-                    let imgPdfHeight = (imgPixelHeight * pdfWidth) / imgPixelWidth;
-                    if (y + imgPdfHeight > pageHeight - marginBottom) {
-                        pdf.addPage();
-                        y = marginTop;
-                    }
-                    pdf.addImage(imgData, 'PNG', marginLR, y, pdfWidth, imgPdfHeight);
-                    y += imgPdfHeight + 2;
-                    i++;
-                    nextQuestion();
-                });
-            } else {
-                pdf.save('PMP_Full.pdf');
-            }
-        }
-        nextQuestion();
+                ${q.reference ? `<div class="pdf-reference" style="color:#6a1b9a;background:#ede7f6;font-family:'Courier New',Courier,monospace;padding:4px 8px;border-radius:5px;display:inline-block;margin-top:7px;margin-bottom:7px;">Reference: ${q.reference.replace(/\n/g,'<br>')}</div>` : ''}
+                ${q.explanation_en ? `<span class="pdf-explanation-en" style="font-style:italic;color:#1976d2;margin-top:7px;margin-bottom:7px;display:block;">Explain EN: ${q.explanation_en.replace(/\n/g,'<br>')}</span>` : ''}
+                ${q.explanation_vi ? `<span class="pdf-explanation-vi" style="margin-bottom:7px;margin-top:7px;display:block;">Explain VI: ${q.explanation_vi.replace(/\n/g,'<br>')}</span>` : ''}
+            </div>
+        </div>`;
+        document.body.appendChild(pdfDiv);
+        html2canvas(pdfDiv, {scale:2, width:624, windowWidth:624, background:'#fff'}).then(canvas => {
+            document.body.removeChild(pdfDiv);
+            cb(canvas);
+        });
     }
+
+    function nextQuestion() {
+        if (i < questions.length) {
+            renderQuestionToCanvas(questions[i], i, function(canvas) {
+                const imgData = canvas.toDataURL('image/png');
+                let imgPixelHeight = canvas.height;
+                let imgPixelWidth = canvas.width;
+                let imgPdfHeight = (imgPixelHeight * pdfWidth) / imgPixelWidth;
+
+                // Luôn addPage mới cho mỗi câu hỏi (trừ câu đầu)
+                if (i > 0) {
+                    pdf.addPage();
+                    y = marginTop;
+                }
+                pdf.addImage(imgData, 'PNG', marginLR, y, pdfWidth, imgPdfHeight);
+                y += imgPdfHeight + 2;
+                i++;
+                nextQuestion();
+            });
+        } else {
+            pdf.save('PMP_Full.pdf');
+        }
+    }
+    nextQuestion();
+}
+    
 
     
     window.onload = function() {
@@ -416,8 +419,8 @@
       renderListPage();
     };
   </script>
-  <!-- jsPDF + html2canvas CDN -->
+    <!-- jsPDF + html2canvas CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
-</html>
+</html>	
