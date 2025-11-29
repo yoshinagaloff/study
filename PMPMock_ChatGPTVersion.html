@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PMP MOCK TEST</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f7f7f7; margin: 0;}
+        .container { background: #fff; border-radius: 12px; padding: 32px; max-width: 900px; margin: 40px auto; box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
+        .title { font-size: 1.6em; font-weight: bold; margin-bottom: 24px; text-align: center;}
+        .icon-main { text-align:center; margin-bottom:16px;}
+        .icon-main svg { vertical-align:middle; width:48px; height:48px; margin-right:10px;}
+        .icon-main span { font-size:2em; vertical-align:middle; }
+        .difficulty { font-weight: bold; padding: 5px 14px; border-radius: 8px; margin-left: 12px;}
+        .Expert { background: #d32f2f; color: #fff;}
+        .Moderate { background: #fbc02d; color: #fff;}
+        .Easy { background: #388e3c; color: #fff;}
+        .question { font-size: 1.1em; margin-bottom: 18px; }
+        .answers { margin-bottom: 22px; }
+        .answer-label { display: block; margin-bottom: 12px; font-size: 1em;}
+        .toggle-btn { cursor: pointer; color: #1976d2; font-weight: bold; display: inline-block; margin-bottom: 15px;}
+        .explanation { display: none; background: #e3f2fd; border-left: 4px solid #1976d2; padding: 16px 18px; margin-top: 18px;}
+        .reference { font-family: 'Courier New', Courier, monospace; color: #6a1b9a; background: #ede7f6; padding: 8px 10px; border-radius: 6px; margin-bottom: 10px; display: block;}
+        .explanation-en { font-style: italic; color: #1976d2; margin-bottom:10px; }
+        .explanation-vi { color: #333; margin-bottom:5px;}
+        .answer-btn, .nav-btn, .end-btn, .list-btn, .print-btn, .first-btn, .last-btn, .start-btn, .load-btn, .askgpt-btn { padding: 8px 22px; font-size: 1.08em; background: #1976d2; color: #fff; border: none; border-radius: 6px; cursor: pointer; margin-top: 12px;}
+        .first-btn, .last-btn, .nav-btn { min-width: 44px; }
+        .nav-btn { background: #616161;}
+        .end-btn { background: #d32f2f; margin-left: 10px;}
+        .list-btn { background: #388e3c; margin-left:10px;}
+        .print-btn { background: #009688; margin-right:8px;}
+        .first-btn { background: #2b7cff; margin-right: 8px;}
+        .last-btn { background: #2b7cff; margin-left: 8px;}
+        .start-btn { background: #009688; margin-top: 8px;}
+        .load-btn { background: #ff9800; margin-left: 12px;}
+        .askgpt-btn { background: #ff9800; margin-top:8px; }
+        .status { font-weight: bold; display: inline-block; margin-left: 8px; padding: 2px 18px; border-radius: 18px; font-size: 1em;}
+        .correct { background: #388e3c; color: #fff; }
+        .incorrect { background: #fbc02d; color: #000; }
+        .mark-correct { color: #388e3c; font-weight:bold;}
+        .mark-incorrect { color: #d32f2f; font-weight:bold;}
+        .highlight-correct { background: #c8e6c9; font-weight: bold;}
+        .highlight-incorrect { background: #fffde7; font-weight: bold;}
+        #upload { margin-bottom: 30px; }
+        .result { font-size: 1.2em; text-align: center; margin-top: 24px; }
+        .summary-table { margin: 0 auto; border-collapse: collapse; margin-top: 24px; }
+        .summary-table th, .summary-table td { border: 1.5px solid #1976d2; padding: 8px 5px; text-align: left;}
+        .summary-table th { background: #eceff1; }
+        .summary-table tr:hover { background: #f1f8e9; }
+        .summary-correct { color: #388e3c; font-weight: bold;}
+        .summary-incorrect { color: #d32f2f; font-weight: bold;}
+        .summary-table .no-choice { color: #aaa; font-style:italic; }
+        .summary-table .summary-correct-row { background: #e8f5e9; }
+        .summary-table .summary-incorrect-row { background: #fffde7; }
+        .total-questions { font-size: 1em; font-weight: bold; color: #333; margin-bottom: 8px;}
+        .filter-box { margin-bottom: 16px; }
+        .filter-select { font-size: 1em; padding: 4px 12px; border-radius: 6px; border: 1px solid #bbb;}
+        table.qtable { width: 100%; border-collapse: collapse; margin-top: 12px; border: 2px solid #1976d2; }
+        table.qtable th, table.qtable td { border: 1.5px solid #1976d2; padding: 8px 5px; text-align: left; }
+        table.qtable th { background: #e3f2fd; color: #1976d2;}
+        table.qtable tr:hover { background: #f1f8e9; }
+        .q-link { color: #1976d2; text-decoration: underline; cursor: pointer; font-weight:bold;}
+        .icon-question {display:inline-block;vertical-align:middle;margin-right:8px;}
+        .icon-question svg {width:28px;height:28px;}
+        .pagination-row {
+            margin-top:22px;
+            display:flex;
+            align-items:center;
+            flex-wrap:wrap;
+            justify-content:space-between;
+            gap: 8px;
+        }
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .pagination-page {
+            font-size:1.12em;
+            font-weight:bold;
+            margin: 0 6px;
+            color:#1976d2;
+            min-width: 58px;
+            text-align: center;
+            display: inline-block;
+        }
+        .action-controls {
+            display: flex;
+            gap: 10px;
+        }
+        .gpt-answer-box {
+            margin-top:18px; background:#fffde7; border-left:4px solid #ff9800; padding:14px 18px; border-radius:7px; color:#222; display:none;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 6vw 1vw;
+                max-width: 100vw;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            .title {
+                font-size: 1.2em;
+                margin-bottom: 16px;
+            }
+            .icon-main svg { width:32px; height:32px; }
+            .icon-main span { font-size:1.2em; }
+            .answers, .question, .toggle-btn, .reference, .explanation-en, .explanation-vi {
+                font-size: 0.98em;
+            }
+            table.qtable, .summary-table {
+                font-size: 0.98em;
+                min-width: 100%;
+                overflow-x: auto;
+                display: block;
+            }
+            table.qtable th, table.qtable td, .summary-table th, .summary-table td {
+                padding: 6px 2px;
+            }
+            .answer-btn, .nav-btn, .end-btn, .list-btn, .print-btn, .first-btn, .last-btn, .start-btn, .load-btn, .askgpt-btn {
+                font-size: 0.98em;
+                padding: 7px 12px;
+                border-radius: 5px;
+                margin-top: 8px;
+                min-width:36px;
+            }
+            .pagination-row, .pagination-controls, .action-controls {
+                flex-wrap: wrap;
+                justify-content: center !important;
+                gap: 6px;
+            }
+            .pagination-page {
+                font-size: 1em;
+                min-width: 44px;
+                margin: 0 4px;
+            }
+        }
+        @media (max-width: 430px) {
+            .container { padding:4vw 0.5vw; }
+            .title { font-size: 1em;}
+            .icon-main svg { width:22px; height:22px;}
+            .icon-main span { font-size:1em;}
+            .answer-btn, .nav-btn, .end-btn, .list-btn, .print-btn, .first-btn, .last-btn, .start-btn, .load-btn, .askgpt-btn {
+                font-size: 0.93em;
+                padding: 6px 7px;
+                border-radius: 4px;
+                margin-top: 7px;
+                min-width:30px;
+            }
+            .pagination-page { font-size:0.98em; min-width:32px;}
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="main-container">
+        <div class="icon-main">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="#2b7cff"><circle cx="32" cy="32" r="30" stroke="#1976d2" stroke-width="4" fill="#e3f2fd"/><text x="32" y="42" text-anchor="middle" font-size="32" fill="#1976d2" font-family="Arial" font-weight="bold">?</text></svg>
+            <span>📚</span>
+        </div>
+        <div class="title">PMP MOCK TEST</div>
+        <input type="file" id="upload" accept=".json" lang="en">
+        <div id="test-area"></div>
+    </div>
+    <script>
+    let questions = [];
+    let current = 0;
+    let userAnswers = [];
+    let checked = [];
+    let showExplanation = [];
+    let inListPage = false;
+    let filterDomain = "all";
+    let openai_api_key = ''; // Your OpenAI API key (you'll be asked on first Ask ChatGPT)
+
+    document.getElementById('upload').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                questions = JSON.parse(evt.target.result);
+                current = 0;
+                userAnswers = Array(questions.length).fill(null);
+                checked = Array(questions.length).fill(false);
+                showExplanation = Array(questions.length).fill(false);
+                filterDomain = "all";
+                document.getElementById('upload').style.display = 'none';
+                renderListPage();
+            } catch (err) {
+                alert('Invalid or malformed JSON file!');
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    function getDomains() {
+        let allDomains = questions.map(q=>q.domain).filter((d,i,self)=>d && self.indexOf(d)===i);
+        return allDomains;
+    }
+
+    function renderListPage() {
+        inListPage = true;
+        let filteredQuestions = filterDomain === "all" ? questions : questions.filter(q=>q.domain===filterDomain);
+        let html = `
+        <div class="icon-main">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="#2b7cff"><circle cx="32" cy="32" r="30" stroke="#1976d2" stroke-width="4" fill="#e3f2fd"/><text x="32" y="42" text-anchor="middle" font-size="32" fill="#1976d2" font-family="Arial" font-weight="bold">📝</text></svg>
+          <span>🧑‍🎓</span>
+        </div>
+        <div class="title">QUESTION LIST</div>
+        <div class="total-questions">Total questions: <span style="color:#1976d2;">${filteredQuestions.length}</span></div>
+        <div class="filter-box">
+            <label for="domain-filter" style="font-weight:bold;">Filter by domain:</label>
+            <select id="domain-filter" class="filter-select">
+                <option value="all">-- All domains --</option>
+                ${getDomains().map(domain=>`<option value="${domain}" ${filterDomain===domain?'selected':''}>${domain}</option>`).join('')}
+            </select>
+        </div>
+        <div style="margin-bottom:20px;">
+            <button class="print-btn" onclick="printQuestionsOnly()">Print Question Only (PDF)</button>
+            <button class="print-btn" onclick="printFull()">Print Full (PDF)</button>
+        </div>
+        <table class="qtable">
+            <tr>
+                <th>Question#</th>
+                <th>Summary</th>
+                <th>Domain</th>
+                <th>Difficulty</th>
+                <th>Status</th>
+            </tr>`;
+        for (let i = 0; i < filteredQuestions.length; i++) {
+            let indexOrigin = questions.indexOf(filteredQuestions[i]);
+            let status = "";
+            if (checked[indexOrigin]) {
+                if (userAnswers[indexOrigin] === questions[indexOrigin].correct) {
+                    status = '<span class="mark-correct">〇 CORRECT</span>';
+                } else {
+                    status = '<span class="mark-incorrect">× INCORRECT</span>';
+                }
+            } else {
+                status = '<span style="color:#757575;">Not answered</span>';
+            }
+            html += `<tr>
+                <td><span class="q-link" onclick="gotoQuestion(${indexOrigin})">Question#${indexOrigin + 1}</span></td>
+                <td>${filteredQuestions[i].short}</td>
+                <td>${filteredQuestions[i].domain || ''}</td>
+                <td><span class="difficulty ${filteredQuestions[i].difficulty}">${filteredQuestions[i].difficulty}</span></td>
+                <td>${status}</td>
+            </tr>`;
+        }
+        html += `</table>
+        <div style="margin-top:24px;text-align:center;">
+            <button class="start-btn" onclick="gotoQuestion(0)">🚀 Start Test!</button>
+            <button class="load-btn" onclick="showUploadPage()">🔄 Load new test</button>
+        </div>`;
+        document.getElementById('test-area').innerHTML = html;
+
+        document.getElementById("domain-filter").onchange = function() {
+            filterDomain = this.value;
+            renderListPage();
+        };
+    }
+
+    function showUploadPage() {
+        document.getElementById('upload').value = '';
+        document.getElementById('upload').style.display = '';
+        document.getElementById('test-area').innerHTML = '';
+        questions = [];
+        current = 0;
+        userAnswers = [];
+        checked = [];
+        showExplanation = [];
+        inListPage = false;
+        filterDomain = "all";
+    }
+
+    function gotoQuestion(idx) {
+        current = idx;
+        inListPage = false;
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        inListPage = false;
+        const q = questions[current];
+        let html = `
+            <div class="icon-main">
+                <span class="icon-question">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/><text x="16" y="22" text-anchor="middle" font-size="16" fill="#1976d2" font-family="Arial" font-weight="bold">Q</text></svg>
+                </span>
+                <span style="font-size:1.3em;">💡</span>
+            </div>
+            <div class="title">Question#${current + 1}
+                <span class="difficulty ${q.difficulty}">${q.difficulty}</span>
+            </div>
+            <div style="margin-bottom:10px;font-size:1em;color:#555;"><b>Summary:</b> ${q.short}</div>
+            <div class="question">${q.question.replace(/\n/g,'<br>')}</div>
+            <form id="answers" class="answers">
+        `;
+        q.options.forEach((option, i) => {
+            html += `
+                <label class="answer-label" id="label${i}">
+                    <input type="radio" name="q${current}" value="${i}" ${userAnswers[current] == i ? 'checked' : ''} ${checked[current] ? 'disabled' : ''} onchange="saveSelected(${current},${i})">
+                    ${String.fromCharCode(65+i)}. ${option}
+                </label>
+            `;
+        });
+        html += `</form>
+            <button class="answer-btn" onclick="checkAnswer()">ANSWER</button>
+            <span id="status" class="status"></span>
+            <div class="toggle-btn" onclick="toggleExplanation()">
+                + Show answer & explanation
+            </div>
+            <div id="explanation" class="explanation" style="display:${showExplanation[current] ? 'block' : 'none'};">
+                <strong>Correct answer: <span class="correct">${String.fromCharCode(65 + q.correct)}</span></strong><br>
+                <span class="reference">Reference: ${q.reference ? q.reference.replace(/\n/g,'<br>') : ''}</span>
+                <div class="explanation-en">${q.explanation_en ? q.explanation_en.replace(/\n/g,'<br>') : ''}</div>
+                <div class="explanation-vi">${q.explanation_vi ? q.explanation_vi.replace(/\n/g,'<br>') : ''}</div>
+            </div>
+            <div>
+                <button class="askgpt-btn" onclick="askChatGPT(${current})" id="askGPTbtn${current}" type="button">
+                    🤖 Ask ChatGPT
+                </button>
+                <span id="gpt-loading${current}" style="margin-left:10px; color:#1976d2; display:none;">Asking ChatGPT...</span>
+                <div id="gpt-answer${current}" class="gpt-answer-box"></div>
+            </div>
+            <div class="pagination-row">
+                <div class="pagination-controls">
+                    ${current > 0 ? `<button class="first-btn" onclick="gotoQuestion(0)">&laquo;</button>` : ""}
+                    ${current > 0 ? `<button class="nav-btn" onclick="prevQuestion()">&lt;</button>` : ""}
+                    <span class="pagination-page">${current + 1} / ${questions.length}</span>
+                    ${current < questions.length - 1 ? `<button class="nav-btn" onclick="nextQuestion()">&gt;</button>` : ""}
+                    ${current < questions.length - 1 ? `<button class="last-btn" onclick="gotoQuestion(${questions.length-1})">&raquo;</button>` : ""}
+                </div>
+                <div class="action-controls">
+                    <button class="list-btn" onclick="renderListPage()">Back to list</button>
+                    <button class="end-btn" onclick="endTest()">End</button>
+                </div>
+            </div>
+        `;
+        document.getElementById('test-area').innerHTML = html;
+        if (checked[current]) showCheckResult();
+    }
+
+    // --- ChatGPT API integration ---
+    async function askChatGPT(idx) {
+        if (!openai_api_key) {
+            openai_api_key = prompt('Please enter your OpenAI API key (will be kept in memory for this session only):');
+            if (!openai_api_key) return;
+        }
+        document.getElementById('askGPTbtn'+idx).disabled = true;
+        document.getElementById('gpt-loading'+idx).style.display = 'inline';
+        document.getElementById('gpt-answer'+idx).style.display = 'none';
+
+        const q = questions[idx];
+        let prompt = `Phân tích câu hỏi PMP sau, giải thích chi tiết bằng tiếng Việt và lý do chọn, không chọn từng đáp án.\n\nCâu hỏi:\n${q.question}\n\nCác đáp án:\n${q.options.map((opt, i)=>String.fromCharCode(65+i)+'. '+opt).join('\n')}`;
+
+        try {
+            const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + openai_api_key
+                },
+                body: JSON.stringify({
+                    model: "gpt-3.5-turbo",
+                    messages: [{role: "user", content: prompt}],
+                    temperature: 0.2
+                })
+            });
+            const data = await resp.json();
+            let answer = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
+                ? data.choices[0].message.content
+                : "Không nhận được trả lời từ ChatGPT.";
+            document.getElementById('gpt-answer'+idx).innerHTML = `<b>ChatGPT phân tích:</b><br>` + answer.replace(/\n/g, "<br>");
+            document.getElementById('gpt-answer'+idx).style.display = 'block';
+        } catch (e) {
+            document.getElementById('gpt-answer'+idx).innerHTML = 'Error contacting ChatGPT!';
+            document.getElementById('gpt-answer'+idx).style.display = 'block';
+        }
+        document.getElementById('gpt-loading'+idx).style.display = 'none';
+        document.getElementById('askGPTbtn'+idx).disabled = false;
+    }
+
+    function saveSelected(qidx, optidx) {
+        userAnswers[qidx] = optidx;
+    }
+
+    function checkAnswer() {
+        if (checked[current]) return;
+        const radios = document.getElementsByName('q'+current);
+        let chosen = null;
+        for (let i = 0; i < radios.length; i++) {
+            if (radios[i].checked) {
+                chosen = parseInt(radios[i].value);
+                break;
+            }
+        }
+        if (chosen === null) {
+            document.getElementById('status').textContent = "Please choose an answer!";
+            document.getElementById('status').className = "status";
+            return;
+        }
+        userAnswers[current] = chosen;
+        checked[current] = true;
+        showCheckResult();
+    }
+
+    function showCheckResult() {
+        const q = questions[current];
+        const chosen = userAnswers[current];
+        const status = document.getElementById('status');
+        for (let i = 0; i < q.options.length; i++) {
+            document.getElementById('label'+i).classList.remove("highlight-correct");
+            document.getElementById('label'+i).classList.remove("highlight-incorrect");
+        }
+        if (chosen === q.correct) {
+            status.textContent = "CORRECT";
+            status.className = "status correct";
+            document.getElementById('label'+q.correct).classList.add("highlight-correct");
+        } else {
+            status.textContent = "INCORRECT";
+            status.className = "status incorrect";
+            if (chosen !== null) document.getElementById('label'+chosen).classList.add("highlight-incorrect");
+            document.getElementById('label'+q.correct).classList.add("highlight-correct");
+        }
+        const radios = document.getElementsByName('q'+current);
+        for (let i = 0; i < radios.length; i++) {
+            radios[i].disabled = true;
+        }
+    }
+
+    function toggleExplanation() {
+        showExplanation[current] = !showExplanation[current];
+        document.getElementById('explanation').style.display = showExplanation[current] ? 'block' : 'none';
+    }
+
+    function nextQuestion() {
+        if (current < questions.length - 1) {
+            current++;
+            renderQuestion();
+        }
+    }
+    function prevQuestion() {
+        if (current > 0) {
+            current--;
+            renderQuestion();
+        }
+    }
+
+    function endTest() {
+        for (let i = 0; i < questions.length; i++) {
+            checked[i] = true;
+        }
+        let correctCount = 0;
+        let html = `
+        <div class="icon-main">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="#2b7cff"><circle cx="32" cy="32" r="30" stroke="#1976d2" stroke-width="4" fill="#e3f2fd"/><text x="32" y="42" text-anchor="middle" font-size="32" fill="#1976d2" font-family="Arial" font-weight="bold">🏆</text></svg>
+            <span>🎓</span>
+        </div>
+        <div class="result">Your result:<br><br>
+        <table class="summary-table">
+            <tr>
+                <th>Question#</th>
+                <th>Your choice</th>
+                <th>Correct answer</th>
+                <th>Result</th>
+            </tr>
+        `;
+        for (let i = 0; i < questions.length; i++) {
+            let isCorrect = userAnswers[i] === questions[i].correct;
+            let userAns = (userAnswers[i] === null)
+                ? '<span class="no-choice">(No choice)</span>'
+                : String.fromCharCode(65 + userAnswers[i]);
+            let correctAns = String.fromCharCode(65 + questions[i].correct);
+            if (isCorrect) correctCount++;
+            html += `<tr class="${userAnswers[i] === null ? '' : (isCorrect ? 'summary-correct-row' : 'summary-incorrect-row')}">
+                <td>Question#${i+1}</td>
+                <td>${userAns}</td>
+                <td>${correctAns}</td>
+                <td>${isCorrect ? '<span class="summary-correct">CORRECT</span>' : '<span class="summary-incorrect">INCORRECT</span>'}</td>
+            </tr>`;
+        }
+        html += `</table>
+        <div style="margin-top:24px;font-size:1.3em;">
+        Correct answers: <span class="summary-correct">${correctCount}</span> / <span style="font-weight:bold;">${questions.length}</span>
+        </div>
+        <div style="margin-top:24px;">
+            <button class="end-btn" onclick="restartTest()">Restart</button>
+            <button class="list-btn" onclick="renderListPage()">Back to list</button>
+        </div>
+        </div>`;
+        document.getElementById('test-area').innerHTML = html;
+    }
+
+    function restartTest() {
+        userAnswers = Array(questions.length).fill(null);
+        checked = Array(questions.length).fill(false);
+        showExplanation = Array(questions.length).fill(false);
+        inListPage = true;
+        renderListPage();
+    }
+
+    function printQuestionsOnly() {
+        if (!questions.length) return;
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "normal");
+        doc.text("PMP MOCK TEST - Questions Only", 20, 20);
+        let y = 30;
+        questions.forEach((q, idx) => {
+            let qStr = `Question#${idx+1}: ${q.question.replace(/\n/g,' ')} [${q.difficulty}]`;
+            let lines = doc.splitTextToSize(qStr, 170);
+            doc.text(lines, 20, y);
+            y += lines.length * 6 + 2;
+            q.options.forEach((opt, i) => {
+                let optStr = `${String.fromCharCode(65+i)}. ${opt}`;
+                let optLines = doc.splitTextToSize(optStr, 160);
+                doc.text(optLines, 24, y);
+                y += optLines.length * 6 + 1;
+            });
+            y += 6;
+            if (y > 285) { doc.addPage(); y = 20; }
+        });
+        doc.save("PMP_Questions_Only.pdf");
+    }
+
+    function printFull() {
+        if (!questions.length) return;
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const marginLR = 15; // mm
+        const marginTop = 10;
+        const marginBottom = 10;
+        const pdfWidth = pageWidth - marginLR * 2;
+        let y = marginTop;
+
+        let i = 0;
+
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(21);
+        pdf.text("PMP MOCK TEST - Full Content", pageWidth / 2, marginTop + 8, { align: "center" });
+        y = marginTop + 18;
+
+        function renderQuestionToCanvas(q, idx, cb) {
+            let pdfDiv = document.createElement("div");
+            pdfDiv.setAttribute('style', 'width:624px;background:#fff;color:#222;position:fixed;left:-9999px;top:0;z-index:-1;padding:0;');
+            pdfDiv.innerHTML = `<div class="pdf-main" style="font-size: 15px; color: #222 !important; background: #fff !important;">
+                <div class="pdf-question">
+                    <span class="pdf-qnum" style="color:#1976d2;font-weight:bold;">Question#${idx+1}:</span>
+                    <span class="pdf-difficulty" style="color:#fbc02d;font-weight:bold;"> [${q.difficulty}]</span>
+                    <div class="pdf-question-text">${q.question.replace(/\n/g,'<br>')}</div>
+                    <div class="pdf-options">
+                        ${q.options.map((opt,i)=>`<div class="pdf-option">${String.fromCharCode(65+i)}. ${opt}${i===q.correct ? '<span style="color:#388e3c;font-weight:bold;"> [Correct]</span>':''}</div>`).join('')}
+                    </div>
+                    ${q.reference ? `<div class="pdf-reference" style="color:#6a1b9a;background:#ede7f6;font-family:'Courier New',Courier,monospace;padding:4px 8px;border-radius:5px;display:inline-block;margin-top:7px;margin-bottom:7px;">Reference: ${q.reference.replace(/\n/g,'<br>')}</div>` : ''}
+                    ${q.explanation_en ? `<span class="pdf-explanation-en" style="font-style:italic;color:#1976d2;margin-top:7px;margin-bottom:7px;display:block;">Explain EN: ${q.explanation_en.replace(/\n/g,'<br>')}</span>` : ''}
+                    ${q.explanation_vi ? `<span class="pdf-explanation-vi" style="margin-bottom:7px;margin-top:7px;display:block;">Explain VI: ${q.explanation_vi.replace(/\n/g,'<br>')}</span>` : ''}
+                </div>
+            </div>`;
+            document.body.appendChild(pdfDiv);
+            html2canvas(pdfDiv, {scale:2, width:624, windowWidth:624, background:'#fff'}).then(canvas => {
+                document.body.removeChild(pdfDiv);
+                cb(canvas);
+            });
+        }
+
+        function nextQuestion() {
+            if (i < questions.length) {
+                renderQuestionToCanvas(questions[i], i, function(canvas) {
+                    const imgData = canvas.toDataURL('image/png');
+                    let imgPixelHeight = canvas.height;
+                    let imgPixelWidth = canvas.width;
+                    let imgPdfHeight = (imgPixelHeight * pdfWidth) / imgPixelWidth;
+                    if (y + imgPdfHeight > pageHeight - marginBottom) {
+                        pdf.addPage();
+                        y = marginTop;
+                    }
+                    pdf.addImage(imgData, 'PNG', marginLR, y, pdfWidth, imgPdfHeight);
+                    y += imgPdfHeight + 2;
+                    i++;
+                    nextQuestion();
+                });
+            } else {
+                pdf.save('PMP_Full.pdf');
+            }
+        }
+        nextQuestion();
+    }
+    </script>
+    <!-- jsPDF + html2canvas CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</body>
+</html>
