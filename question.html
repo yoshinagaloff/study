@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>PMP MOCK TEST - Question</title>
+  <title>PMP MOCK TEST</title>
   <style>
     body { background:#f4f4f4; font-size:15px;}
     .container {
@@ -70,13 +70,87 @@
     }
     .highlight-correct { background: #c8e6c9; font-weight: bold;}
     .highlight-incorrect { background: #fffde7; font-weight: bold;}
+    /* TIMER nhỏ gọn 1 dòng */
+    #timer-controls { 
+      margin: 0 auto 16px auto; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      gap:7px;
+      background: #f9f6ef;
+      border-radius: 8px;
+      padding: 7px 12px;
+      box-shadow: 0 1.5px 4px rgba(255,193,7,0.07);
+      max-width: 520px;
+      font-size: 1em;
+    }
+    #timer-sandglass {
+      font-size:1.28em; 
+      margin:0 3px 0 0;
+      color: #ff9800;
+      animation: sandmove 2s infinite linear;
+      display:inline-block;
+    }
+    @keyframes sandmove {
+      0%   {transform:rotate(0deg);}
+      90%  {transform:rotate(0deg);}
+      100% {transform:rotate(180deg);}
+    }
+    #timer-controls label {font-weight:500; margin:0;}
+    #timer-controls input[type="number"] {
+      width:30px;
+      border-radius:3px;
+      border:1px solid #ccc;
+      font-size:1em;
+      padding:1px 2px;
+      margin:0 0 0 3px;
+    }
+    #start-timer, #reset-timer {
+      background: #1976d2;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 13px;
+      font-weight: bold;
+      font-size: 0.97em;
+      cursor:pointer;
+      transition:background 0.16s;
+      margin-left: 0;
+    }
+    #start-timer:hover, #reset-timer:hover { background: #0d47a1;}
+    #reset-timer { background:#bbb; color:#222; }
+    #timer-display { font-size:1.09em; margin-left:3px; font-weight:bold; color:#1976d2;}
+    /* Clear Button style */
+    #clear-answer-row {
+      display: flex;
+      justify-content: center;
+      margin: 16px 0 0 0;
+    }
+    #clear-answer {
+      background:#ffe082;
+      color:#444;
+      border:none;
+      border-radius:8px;
+      font-size:1em;
+      font-weight:600;
+      padding:8px 18px 8px 14px;
+      cursor:pointer;
+      box-shadow:0 2px 6px rgba(255,193,7,0.11);
+      display: flex;
+      align-items: center;
+      gap:7px;
+      transition: background 0.2s;
+    }
+    #clear-answer:hover {
+      background:#ffd54f;
+      color:#222;
+    }
+    #clear-icon {
+      font-size: 1.2em;
+    }
     @media (max-width: 950px) {
       .container {max-width:99vw; padding:2vw;}
-      .question-big { font-size:1em;}
-      .level-tag { font-size:1em; padding:6px 12px;}
-      .answer-btn, .list-btn, .end-btn, .nav-btn, .first-btn, .last-btn { font-size:1em; padding:7px 10px;}
-      .answer-label {font-size:1em;}
-      .pagination-page { font-size:1em; min-width:38px;}
+      #timer-controls {max-width:95vw;}
     }
   </style>
 </head>
@@ -87,6 +161,19 @@
       <span>📚</span>
     </div>
     <div class="title">PMP MOCK TEST</div>
+    
+    <!-- TIMER nhỏ gọn 1 dòng -->
+    <div id="timer-controls">
+      <span id="timer-sandglass">⏳</span>
+      <label>
+        <input type="number" id="minutes" min="0" max="99" value="1"> phút
+        <input type="number" id="seconds" min="0" max="59" value="0"> giây
+      </label>
+      <button id="start-timer" type="button">Start</button>
+      <button id="reset-timer" type="button">Reset</button>
+      <span id="timer-display">01:00</span>
+    </div>
+
     <div class="question-header-row">
       <span class="question-big" id="question-number"></span>
       <span class="level-tag" id="question-level"></span>
@@ -103,6 +190,16 @@
       <span id="status" class="status"></span>
     </div>
     <div id="explanation" class="explanation" style="display:none;"></div>
+    
+    <!-- CLEAR/RESET ANSWER - dưới cùng ngay trên phân trang -->
+    <div id="clear-answer-row">
+      <button id="clear-answer" type="button">
+        <span id="clear-icon">🧹</span> 
+        Clear/Reset Answer
+      </button>
+    </div>
+    <!-- END CLEAR -->
+
     <div class="action-buttons-row">
       <div class="pagination-controls">
         <button class="first-btn" id="btn-first">&laquo;</button>
@@ -118,6 +215,80 @@
     </div>
   </div>
   <script>
+    // TIMER LOGIC
+    let timerInterval = null;
+    let remainingTime = 60;
+    let timerIsActive = false;
+
+    function displayTimer(sec) {
+      let m = Math.floor(sec/60).toString().padStart(2,'0');
+      let s = (sec%60).toString().padStart(2,'0');
+      document.getElementById('timer-display').textContent = `${m}:${s}`;
+    }
+    function startCountdown() {
+      let m = parseInt(document.getElementById('minutes').value) || 0;
+      let s = parseInt(document.getElementById('seconds').value) || 0;
+      remainingTime = m*60 + s;
+      if (remainingTime <= 0) return;
+      if(timerIsActive) {
+        clearInterval(timerInterval);
+      }
+      displayTimer(remainingTime);
+      timerIsActive = true;
+      timerInterval = setInterval(()=>{
+        remainingTime--;
+        displayTimer(remainingTime);
+        if (remainingTime <= 0) {
+          clearInterval(timerInterval);
+          timerIsActive = false;
+          alert('HẾT GIỜ!');
+        }
+      },1000);
+    }
+    function resetTimer() {
+      clearInterval(timerInterval);
+      timerIsActive = false;
+      let m = parseInt(document.getElementById('minutes').value) || 0;
+      let s = parseInt(document.getElementById('seconds').value) || 0;
+      remainingTime = m*60 + s;
+      displayTimer(remainingTime);
+    }
+    document.getElementById('start-timer').onclick = startCountdown;
+    document.getElementById('reset-timer').onclick = resetTimer;
+    window.addEventListener('DOMContentLoaded', ()=>{
+      resetTimer();
+    });
+
+    // CLEAR/RESET ANSWER LOGIC
+    document.getElementById('clear-answer').onclick = function() {
+      document.querySelectorAll('input[type=radio][name="q'+current+'"],input[type=checkbox][name="q'+current+'"]').forEach(el=>{
+        el.checked = false;
+        el.disabled = false;
+      });
+      userAnswers[current] = (getMultiCount(questions[current].question, questions[current].options) > 1) ? [] : null;
+      checked[current] = false;
+      localStorage.setItem('pmp_userAnswers', JSON.stringify(userAnswers));
+      localStorage.setItem('pmp_checked', JSON.stringify(checked));
+      document.getElementById('status').textContent = "";
+      document.getElementById('status').className = "status";
+      document.getElementById("toggle-explanation").innerHTML = "+ Show answer & explanation";
+      document.getElementById("explanation").style.display = "none";
+      showExplanation[current] = false;
+      let q = questions[current];
+      if(q && q.options) {
+        for (let i = 0; i < q.options.length; i++) {
+          let lbl = document.getElementById('label'+i);
+          if(lbl) lbl.classList.remove("highlight-correct","highlight-incorrect");
+        }
+      }
+      let multiCount = getMultiCount(questions[current].question, questions[current].options);
+      if(multiCount > 1){
+        let boxes = document.querySelectorAll('input[type=checkbox][name="q'+current+'"]');
+        boxes.forEach(box=>{ box.disabled = false; });
+      }
+    };
+
+    // ----------- LOGIC GỐC -----------
     let questions = [];
     let current = 0;
     let userAnswers = [];
@@ -217,7 +388,6 @@
         }
       });
     };
-
     function showCheckResult() {
       const q = questions[current];
       const multiCount = getMultiCount(q.question, q.options);
